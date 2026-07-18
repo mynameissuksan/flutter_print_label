@@ -1,0 +1,38 @@
+name: flutter_print_label
+description: "Bluetooth label printer plugin (TSPL) for Android and iOS. Supports budget Chinese label printers (VOZY, Xprinter, Gprinter, ...) that advertise BLE without a name."
+version: 0.1.0
+homepage: https://github.com/mynameissuksan/flutter_print_label
+repository: https://github.com/mynameissuksan/flutter_print_label
+
+environment:
+  sdk: ^3.0.0
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+screenshots:
+  - description: 'Sample 100 x 150 mm shipping label (TSPL) printed from the example app over Bluetooth.'
+    path: image/sample_label.png
+
+topics:
+  - bluetooth
+  - printer
+  - label
+  - tspl
+  - thermal-printer
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.adsshortcut.flutter_print_label
+        pluginClass: FlutterPrintLabelPlugin
+      ios:
+        pluginClass: FlutterPrintLabelPlugin

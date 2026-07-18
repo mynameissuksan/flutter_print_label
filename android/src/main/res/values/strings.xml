@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="fail_connect_bt">Cannot establish Bluetooth connection</string>
+    <string name="lost_connection_bt">Bluetooth connection lost</string>
+    <string name="not_permissions">All permissions must be granted for Bluetooth printing to work</string>
+    <string name="fail_write_data">Could not send data to the printer</string>
+</resources>
