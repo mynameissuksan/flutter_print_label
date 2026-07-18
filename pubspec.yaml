@@ -20,6 +20,8 @@ dev_dependencies:
 screenshots:
   - description: 'Sample 100 x 150 mm shipping label (TSPL) printed from the example app over Bluetooth.'
     path: image/sample_label.png
+  - description: 'A budget thermal label printer printing a shipping label over Bluetooth.'
+    path: image/images.jpeg
 
 topics:
   - bluetooth

@@ -2,7 +2,10 @@
 
 Bluetooth label printer plugin (TSPL) for Android and iOS.
 
-<img src="image/sample_label.png" alt="Sample 100x150mm label printed with flutter_print_label" width="320">
+<p>
+  <img src="image/sample_label.png" alt="Sample 100x150mm label printed with flutter_print_label" width="300">
+  <img src="image/images.jpeg" alt="Thermal label printer printing a shipping label" width="300">
+</p>
 
 Built for real-world budget label printers — VOZY, Xprinter, Gprinter and
 similar Chinese thermal printers used for shipping labels — including the
