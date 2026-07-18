@@ -1,3 +1,11 @@
+## 0.1.1
+
+- Add screenshots to the pub.dev gallery (sample printed label and printer photo).
+- Example app now prints a complete shipping-label layout (barcode, divider
+  lines, label specs, footer and QR code) matching the sample image.
+- README: add label/printer images and extend the TSPL quick reference
+  (`QRCODE`, `BAR`).
+
 ## 0.1.0
 
 Initial release.
