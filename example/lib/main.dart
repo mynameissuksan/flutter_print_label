@@ -90,16 +90,34 @@ class _PrinterPageState extends State<PrinterPage> {
   }
 
   Future<void> _printTestLabel() async {
-    // A 100 x 150 mm TSPL test label with text and a barcode.
+    // A complete 100 x 150 mm (800 x 1200 dots @ 203 dpi) TSPL test label:
+    // title, printer info, Code 128 barcode, divider lines, label specs,
+    // footer, and a QR code — matching the sample image shipped with the
+    // package (image/sample_label.png).
     await _printer.printTspl(
       'SIZE 100 mm,150 mm\r\n'
       'GAP 3 mm,0 mm\r\n'
       'DIRECTION 1\r\n'
       'CLS\r\n'
+      // --- Header ---
       'TEXT 50,80,"3",0,2,2,"FLUTTER PRINT LABEL"\r\n'
-      'TEXT 50,180,"3",0,1,1,"Printer: ${_selected?.name ?? "-"}"\r\n'
-      'TEXT 50,240,"3",0,1,1,"Test print OK"\r\n'
-      'BARCODE 50,320,"128",100,1,0,2,2,"TEST1234"\r\n'
+      'TEXT 50,195,"3",0,1,1,"Printer: ${_selected?.name ?? "-"}"\r\n'
+      'TEXT 50,255,"3",0,1,1,"Test print OK"\r\n'
+      // --- Code 128 barcode, 200 dots tall, human-readable below ---
+      'BARCODE 50,340,"128",200,2,0,3,3,"TEST1234"\r\n'
+      // --- Divider line (BAR x,y,width,height) ---
+      'BAR 50,640,700,3\r\n'
+      // --- Label specs ---
+      'TEXT 50,675,"3",0,1,1,"SIZE : 100 x 150 mm"\r\n'
+      'TEXT 50,725,"3",0,1,1,"GAP  : 3 mm"\r\n'
+      'TEXT 50,775,"3",0,1,1,"MODE : TSPL over Bluetooth (BLE)"\r\n'
+      // --- Divider line ---
+      'BAR 50,850,700,3\r\n'
+      // --- Footer ---
+      'TEXT 50,885,"3",0,1,1,"Printed with flutter_print_label"\r\n'
+      'TEXT 50,940,"2",0,1,1,"pub.dev/packages/flutter_print_label"\r\n'
+      // --- QR code, bottom right (cell size 7 ~= 200 dots wide) ---
+      'QRCODE 540,960,M,7,A,0,"https://pub.dev/packages/flutter_print_label"\r\n'
       'PRINT 1,1\r\n',
     );
 

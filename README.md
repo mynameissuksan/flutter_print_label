@@ -91,6 +91,10 @@ await printer.sendBytes(bytes);
 await printer.disconnect();
 ```
 
+See [example/lib/main.dart](example/lib/main.dart) for a complete
+shipping-label layout (barcode, dividers, specs, footer and QR code)
+that prints exactly the label shown in the screenshot above.
+
 ### Handling unnamed printers
 
 Devices without a name are emitted as `Unknown (xxxx)` / `Printer (xxxx)`.
@@ -121,6 +125,8 @@ await printer.showEnableBluetoothAlert();
 | `CLS` | Clear the image buffer |
 | `TEXT x,y,"font",rotation,x-mul,y-mul,"content"` | Draw text |
 | `BARCODE x,y,"128",height,readable,rotation,narrow,wide,"content"` | Draw barcode |
+| `QRCODE x,y,ECC,cellWidth,mode,rotation,"content"` | Draw QR code |
+| `BAR x,y,width,height` | Draw a filled bar (divider line) |
 | `BITMAP x,y,widthBytes,height,mode,data` | Draw bitmap (for images/PDF rasters) |
 | `PRINT 1,1` | Print |
 
