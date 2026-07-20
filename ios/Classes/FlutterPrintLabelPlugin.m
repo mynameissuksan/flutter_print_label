@@ -28,6 +28,12 @@
 @property(nonatomic, strong) CBCharacteristic *writeCharacteristic;
 @property(nonatomic, assign) BOOL pendingScan;
 @property(nonatomic, assign) BOOL reportedConnected;
+// งานเขียนที่กำลังทยอยส่งอยู่ (ใช้ flow control ของ CoreBluetooth แทนการหน่วงตายตัว)
+@property(nonatomic, strong) NSData *pendingWriteData;
+@property(nonatomic, assign) NSUInteger pendingWriteOffset;
+@property(nonatomic, assign) NSUInteger pendingWriteMtu;
+@property(nonatomic, assign) CBCharacteristicWriteType pendingWriteType;
+@property(nonatomic, copy) FlutterResult pendingWriteResult;
 @end
 
 @implementation FlutterPrintLabelPlugin
@@ -178,8 +184,8 @@
                cArray[i] = [bytes[i] charValue];
            }
            NSData *data = [NSData dataWithBytes:cArray length:sizeof(cArray)];
-           [self sendData:data];
-           result(nil);
+           // คืนค่าเมื่อเขียนครบจริง เพื่อให้ Dart await ได้และงานไม่ซ้อนกัน
+           [self sendData:data result:result];
        } @catch (FlutterError *e) {
            result(e);
        }
@@ -369,12 +375,15 @@ didDiscoverCharacteristicsForService:(CBService *)service
 
 // ===== Writing =====
 
-- (void)sendData:(NSData *)data {
+/// [completion] ถูกเรียกเมื่อเขียนครบทุกก้อน (หรือหลุดกลางคัน)
+/// ทำให้ฝั่ง Dart await ได้จริง แทนที่จะคืนค่าทันทีแล้วงานซ้อนกัน
+- (void)sendData:(NSData *)data result:(FlutterResult)completion {
     CBPeripheral *peripheral = self.connectedPeripheral;
     CBCharacteristic *ch = self.writeCharacteristic;
     if (peripheral == nil || ch == nil ||
         peripheral.state != CBPeripheralStateConnected) {
         NSLog(@"write skipped: not connected or no writable characteristic");
+        if (completion) completion(nil);
         return;
     }
 
@@ -385,36 +394,62 @@ didDiscoverCharacteristicsForService:(CBService *)service
     NSUInteger mtu = [peripheral maximumWriteValueLengthForType:type];
     if (mtu == 0 || mtu > 512) mtu = 150;
 
-    [self writeChunk:data offset:0 peripheral:peripheral characteristic:ch mtu:mtu type:type];
+    self.pendingWriteData = data;
+    self.pendingWriteOffset = 0;
+    self.pendingWriteMtu = mtu;
+    self.pendingWriteType = type;
+    self.pendingWriteResult = completion;
+
+    [self pumpPendingWrite];
 }
 
-- (void)writeChunk:(NSData *)data
-            offset:(NSUInteger)offset
-        peripheral:(CBPeripheral *)peripheral
-    characteristic:(CBCharacteristic *)ch
-               mtu:(NSUInteger)mtu
-              type:(CBCharacteristicWriteType)type {
-    if (offset >= data.length) {
-        return;
-    }
-    if (peripheral.state != CBPeripheralStateConnected) {
+/// เขียนต่อเนื่องเท่าที่คิวของ CoreBluetooth รับไหว
+/// เมื่อคิวเต็มจะหยุดรอ callback peripheralIsReadyToSendWriteWithoutResponse:
+/// เร็วกว่าการหน่วงตายตัวต่อก้อนหลายเท่า แต่ยังไม่ท่วมบัฟเฟอร์เครื่องพิมพ์
+- (void)pumpPendingWrite {
+    NSData *data = self.pendingWriteData;
+    if (data == nil) return;
+
+    CBPeripheral *peripheral = self.connectedPeripheral;
+    CBCharacteristic *ch = self.writeCharacteristic;
+    if (peripheral == nil || ch == nil ||
+        peripheral.state != CBPeripheralStateConnected) {
         NSLog(@"write aborted: disconnected at %lu/%lu",
-              (unsigned long)offset, (unsigned long)data.length);
+              (unsigned long)self.pendingWriteOffset, (unsigned long)data.length);
+        [self finishPendingWrite];
         return;
     }
-    NSUInteger len = MIN(mtu, data.length - offset);
-    [peripheral writeValue:[data subdataWithRange:NSMakeRange(offset, len)]
-         forCharacteristic:ch
-                      type:type];
-    // Pace the writes — budget printers cannot absorb data at full speed and
-    // silently drop bytes when their BLE buffer overflows.
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(15 * NSEC_PER_MSEC)),
-                   dispatch_get_main_queue(), ^{
-        [self writeChunk:data offset:offset + len peripheral:peripheral characteristic:ch mtu:mtu type:type];
-    });
+
+    while (self.pendingWriteOffset < data.length) {
+        if (self.pendingWriteType == CBCharacteristicWriteWithoutResponse &&
+            !peripheral.canSendWriteWithoutResponse) {
+            // คิวเต็ม — รอ callback แล้วค่อยมาต่อ
+            return;
+        }
+
+        NSUInteger len =
+            MIN(self.pendingWriteMtu, data.length - self.pendingWriteOffset);
+        [peripheral writeValue:[data subdataWithRange:NSMakeRange(self.pendingWriteOffset, len)]
+             forCharacteristic:ch
+                          type:self.pendingWriteType];
+        self.pendingWriteOffset += len;
+    }
+
+    [self finishPendingWrite];
 }
 
-// ===== Connection state reporting =====
+- (void)finishPendingWrite {
+    FlutterResult completion = self.pendingWriteResult;
+    self.pendingWriteData = nil;
+    self.pendingWriteOffset = 0;
+    self.pendingWriteResult = nil;
+    if (completion) completion(nil);
+}
+
+/// CoreBluetooth แจ้งว่าคิวว่างแล้ว — เขียนก้อนถัดไปต่อ
+- (void)peripheralIsReadyToSendWriteWithoutResponse:(CBPeripheral *)peripheral {
+    [self pumpPendingWrite];
+}
 
 - (void)updateConnectState:(ConnectState)state {
     dispatch_async(dispatch_get_main_queue(), ^{
