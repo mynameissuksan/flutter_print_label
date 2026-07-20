@@ -1,4 +1,11 @@
-## 0.1.1
+## 0.1.3
+
+- iOS: use the full negotiated ATT payload size for writes. Previously any
+  reported size above 512 fell back to 150 bytes, which cut BLE throughput by
+  several times when printing full-page label bitmaps.
+- iOS: log the payload size and MTU actually used for each write.
+
+## 0.1.2
 
 - Add screenshots to the pub.dev gallery (sample printed label and printer photo).
 - Example app now prints a complete shipping-label layout (barcode, divider

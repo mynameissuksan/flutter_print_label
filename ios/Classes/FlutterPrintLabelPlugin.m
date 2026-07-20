@@ -391,8 +391,13 @@ didDiscoverCharacteristicsForService:(CBService *)service
         (ch.properties & CBCharacteristicPropertyWriteWithoutResponse)
             ? CBCharacteristicWriteWithoutResponse
             : CBCharacteristicWriteWithResponse;
+    // ใช้ขนาดแพ็กเก็ตสูงสุดเท่าที่ลิงก์รองรับ — เดิมถ้าค่าที่ได้เกิน 512
+    // จะถอยไปใช้ 150 ไบต์ ทำให้ throughput ตกลงหลายเท่าโดยไม่จำเป็น
     NSUInteger mtu = [peripheral maximumWriteValueLengthForType:type];
-    if (mtu == 0 || mtu > 512) mtu = 150;
+    if (mtu == 0) mtu = 150;      // อ่านค่าไม่ได้ → ค่าปลอดภัย
+    if (mtu > 512) mtu = 512;     // เพดานของ ATT payload
+    NSLog(@"write: %lu bytes, mtu %lu", (unsigned long)data.length,
+          (unsigned long)mtu);
 
     self.pendingWriteData = data;
     self.pendingWriteOffset = 0;
