@@ -1,3 +1,11 @@
+## 0.2.0
+
+- Unify the platform-channel names across iOS and Android and drop the
+  `com.adsshortcut.` prefix. Both platforms now use `flutter_print_label`
+  (method channel) and `flutter_print_label/state` (event channel).
+  The public Dart API (`FlutterPrintLabel.instance`) is unchanged, so app
+  code needs no changes; only forks that talk to the channels directly do.
+
 ## 0.1.3
 
 - iOS: use the full negotiated ATT payload size for writes. Previously any

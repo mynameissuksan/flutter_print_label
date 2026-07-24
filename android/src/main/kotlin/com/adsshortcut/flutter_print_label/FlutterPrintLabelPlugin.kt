@@ -337,7 +337,7 @@ class FlutterPrintLabelPlugin : FlutterPlugin, MethodCallHandler,
     companion object {
         const val PERMISSION_ALL = 1
         const val PERMISSION_ENABLE_BLUETOOTH = 999
-        const val methodChannel = "com.adsshortcut.flutter_print_label"
-        const val eventChannelBT = "com.adsshortcut.flutter_print_label/bt_state"
+        const val methodChannel = "flutter_print_label"
+        const val eventChannelBT = "flutter_print_label/state"
     }
 }

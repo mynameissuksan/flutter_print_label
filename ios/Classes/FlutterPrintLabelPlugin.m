@@ -39,7 +39,7 @@
 @implementation FlutterPrintLabelPlugin
 + (void)registerWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
   FlutterMethodChannel *channel = [FlutterMethodChannel
-      methodChannelWithName:NAMESPACE @"/methods"
+      methodChannelWithName:NAMESPACE
             binaryMessenger:[registrar messenger]];
   FlutterEventChannel *stateChannel =
       [FlutterEventChannel eventChannelWithName:NAMESPACE @"/state"

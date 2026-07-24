@@ -38,17 +38,11 @@ class FlutterPrintLabel {
   /// The shared plugin instance.
   static final FlutterPrintLabel instance = FlutterPrintLabel._();
 
-  static const MethodChannel _androidChannel =
-      MethodChannel('com.adsshortcut.flutter_print_label');
-  static const EventChannel _androidStateChannel =
-      EventChannel('com.adsshortcut.flutter_print_label/bt_state');
-  static const MethodChannel _iosChannel =
-      MethodChannel('flutter_print_label/methods');
-  static const EventChannel _iosStateChannel =
+  // Same channel names on both platforms — the package name is unique on
+  // pub.dev, so it can be used directly as the namespace.
+  static const MethodChannel _channel = MethodChannel('flutter_print_label');
+  static const EventChannel _stateChannel =
       EventChannel('flutter_print_label/state');
-
-  MethodChannel get _channel =>
-      Platform.isIOS ? _iosChannel : _androidChannel;
 
   final StreamController<PrinterDevice> _scanResultsController =
       StreamController<PrinterDevice>.broadcast();
@@ -95,9 +89,7 @@ class FlutterPrintLabel {
       }
     });
 
-    final stateChannel =
-        Platform.isIOS ? _iosStateChannel : _androidStateChannel;
-    stateChannel.receiveBroadcastStream().listen((data) {
+    _stateChannel.receiveBroadcastStream().listen((data) {
       if (data is! int) return;
       final status = switch (data) {
         2 => PrinterConnectionStatus.connected,
@@ -176,10 +168,10 @@ class FlutterPrintLabel {
     Future<void>(() async {
       try {
         if (Platform.isAndroid) {
-          await _androidChannel
+          await _channel
               .invokeMethod(isBle ? 'getBluetoothLeList' : 'getBluetoothList');
         } else if (Platform.isIOS) {
-          await _iosChannel.invokeMethod('startScan');
+          await _channel.invokeMethod('startScan');
         }
       } catch (e, st) {
         if (!controller.isClosed) controller.addError(e, st);
@@ -190,7 +182,7 @@ class FlutterPrintLabel {
       await sub.cancel();
       if (Platform.isIOS) {
         try {
-          await _iosChannel.invokeMethod('stopScan');
+          await _channel.invokeMethod('stopScan');
         } catch (_) {}
       }
       if (!controller.isClosed) await controller.close();
@@ -214,13 +206,13 @@ class FlutterPrintLabel {
   Future<void> connect(PrinterDevice device, {bool autoConnect = false}) async {
     _connectedDevice = device;
     if (Platform.isAndroid) {
-      await _androidChannel.invokeMethod('onStartConnection', {
+      await _channel.invokeMethod('onStartConnection', {
         'address': device.address,
         'isBle': device.isBle,
         'autoConnect': autoConnect,
       });
     } else if (Platform.isIOS) {
-      await _iosChannel.invokeMethod('connect', {
+      await _channel.invokeMethod('connect', {
         'name': device.name,
         'address': device.address,
       });
@@ -243,9 +235,9 @@ class FlutterPrintLabel {
   /// the printer's BLE buffer.
   Future<void> sendBytes(List<int> bytes) async {
     if (Platform.isAndroid) {
-      await _androidChannel.invokeMethod('sendDataByte', {'bytes': bytes});
+      await _channel.invokeMethod('sendDataByte', {'bytes': bytes});
     } else if (Platform.isIOS) {
-      await _iosChannel
+      await _channel
           .invokeMethod('writeData', {'bytes': bytes, 'length': bytes.length});
     }
   }
@@ -268,7 +260,7 @@ class FlutterPrintLabel {
   /// Whether a printer is currently connected.
   Future<bool> isConnected() async {
     if (Platform.isIOS) {
-      return await _iosChannel.invokeMethod('isConnected') == true;
+      return await _channel.invokeMethod('isConnected') == true;
     }
     return _status == PrinterConnectionStatus.connected;
   }
@@ -282,7 +274,7 @@ class FlutterPrintLabel {
   Future<Map<String, String>?> getConnectedDevice() async {
     if (!Platform.isIOS) return null;
     try {
-      final result = await _iosChannel.invokeMethod('connectedDevice');
+      final result = await _channel.invokeMethod('connectedDevice');
       if (result == null) return null;
       return {
         'address': result['address'] as String,
@@ -299,7 +291,7 @@ class FlutterPrintLabel {
   /// iOS, and deep-linking to the Bluetooth settings page is a private API.)
   Future<void> showEnableBluetoothAlert() async {
     if (Platform.isIOS) {
-      await _iosChannel.invokeMethod('showBluetoothAlert');
+      await _channel.invokeMethod('showBluetoothAlert');
     }
   }
 }
